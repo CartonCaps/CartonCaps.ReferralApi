@@ -6,5 +6,6 @@ namespace CartonCaps.ReferralApi.Repositories
 	{
 		Task<string> GetReferralCodeByUserId(int userId);
 		Task<UserReferralProfile?> GetUserByReferralCodeAsync(string referralCode);
+		Task<User> GetUserById(int userId);
 	}
 }

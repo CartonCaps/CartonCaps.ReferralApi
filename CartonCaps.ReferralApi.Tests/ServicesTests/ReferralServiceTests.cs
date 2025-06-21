@@ -1,12 +1,13 @@
-﻿using CartonCaps.ReferralApi.Models;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
+using CartonCaps.ReferralApi.Models;
 using CartonCaps.ReferralApi.Models.Responses;
 using CartonCaps.ReferralApi.Repositories;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CartonCaps.ReferralApi.Services.Tests
 {
@@ -86,6 +87,9 @@ namespace CartonCaps.ReferralApi.Services.Tests
 				.ReturnsAsync("https://mock.link");
 
 			_notificationServiceMock.Setup(n => n.SendSms("1234567890", It.IsAny<string>())).Returns(true);
+			_userRepoMock.Setup(u => u.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1, EmailOrPhone = 
+				"test@gmail.com" });
+
 
 			var result = await _service.CreateReferralInvite(1, "1234567890", "sms", "REF123");
 
@@ -103,6 +107,7 @@ namespace CartonCaps.ReferralApi.Services.Tests
 
 			_notificationServiceMock.Setup(n => n.SendEmail("someone@example.com", It.IsAny<string>(), It.IsAny<string>()))
 				.Returns(false);
+			_userRepoMock.Setup(u => u.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1, EmailOrPhone = "test@gmail.com" });
 
 			ReferralOperationResult result = await _service.CreateReferralInvite(1, "someone@example.com", "email", "REF123");
 
@@ -115,6 +120,9 @@ namespace CartonCaps.ReferralApi.Services.Tests
 		{
 			_referralRepoMock.Setup(r => r.AddReferralInvite(It.IsAny<Referrals>()))
 				.Throws(new Exception("Simulated exception"));
+			_userRepoMock.Setup(u => u.GetUserById(It.IsAny<int>())).ReturnsAsync(new User { Id = 1,
+				EmailOrPhone = "test@gmail.com" });
+
 
 			var result = await _service.CreateReferralInvite(1, "email@example.com", "email", "REF123");
 
@@ -122,6 +130,77 @@ namespace CartonCaps.ReferralApi.Services.Tests
 			Assert.IsTrue(result.Message.Contains("Simulated exception"));
 		}
 
+		[TestMethod]
+		public async Task CanSendReferralInviteAsync_Should_WhenInviteLimitNotExceeded()
+		{
+			// Arrange
+			int userId = 1;
+			string contact = "test@example.com";
+
+			var timestamps = new List<DateTime>();
+			for (int i = 0; i < 3; i++)
+				timestamps.Add(DateTime.UtcNow.AddMinutes(-5));
+
+			var field = typeof(ReferralService).GetField("_inviteTimestamps", BindingFlags.Static | BindingFlags.NonPublic);
+
+			// Remove the readonly flag (I am not proud of this)
+			var isInitOnly = typeof(FieldInfo).GetProperty("IsInitOnly", BindingFlags.NonPublic | BindingFlags.Instance);
+			var attributesField = typeof(FieldInfo).GetField("m_fieldAttributes", BindingFlags.NonPublic | BindingFlags.Instance);
+			if (attributesField != null && field != null)
+			{
+				var attrs = (FieldAttributes)attributesField.GetValue(field);
+				attrs &= ~FieldAttributes.InitOnly;
+				attributesField.SetValue(field, attrs);
+
+				field.SetValue(null, timestamps);
+			}
+
+			_userRepoMock.Setup(x => x.GetUserById(userId))
+						 .ReturnsAsync(new User { EmailOrPhone = "other@example.com" });
+
+			// Act
+		
+			var result = await _service.CanSendReferralInviteAsync(userId, contact);
+
+			// Assert
+			Assert.IsTrue(result.flowControl);
+		}
+
+		[TestMethod]
+		public async Task CanSendReferralInviteAsync_ShouldFail_WhenSelfReferral()
+		{
+			// Arrange
+			int userId = 2;
+			string contact = "self@example.com";
+
+			_userRepoMock.Setup(x => x.GetUserById(userId))
+						 .ReturnsAsync(new User { EmailOrPhone = "self@example.com" });
+
+			// Act
+			var result = await _service.CanSendReferralInviteAsync(userId, contact);
+
+			// Assert
+			Assert.IsFalse(result.flowControl);
+			Assert.AreEqual("Cannot invite yourself.", result.value.Message);
+		}
+
+		[TestMethod]
+		public async Task CanSendReferralInviteAsync_ShouldSucceed_WhenValid()
+		{
+			// Arrange
+			int userId = 1;
+			string contact = "other@example.com";
+
+			_userRepoMock.Setup(x => x.GetUserById(userId))
+						 .ReturnsAsync(new User { EmailOrPhone = "referrer@example.com" });
+
+			// Act
+			var result = await _service.CanSendReferralInviteAsync(userId, contact);
+
+			// Assert
+			Assert.IsTrue(result.flowControl);
+			Assert.IsNull(result.value);
+		}
 
 	}
 }

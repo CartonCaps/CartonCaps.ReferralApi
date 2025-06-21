@@ -12,6 +12,8 @@ namespace CartonCaps.ReferralApi.Services
 		private readonly IUserRepository _userRepository;
 		private readonly IReferralLinkService _referralLinkService;
 		private readonly INotificationService _notificationService;
+		private static readonly Dictionary<int, List<DateTime>> _inviteTimestamps = new();
+		private const int MAX_INVITES_PER_HOUR = 5;
 
 		public ReferralService(IReferralRepository referralRepository, IUserRepository userRepository, 
 			IReferralLinkService referralLinkService, INotificationService notificationService)
@@ -55,8 +57,16 @@ namespace CartonCaps.ReferralApi.Services
 
 		public async Task<ReferralOperationResult> CreateReferralInvite(int referrerId, string emailOrPhone, string channel, string referralCode)
 		{
+			
 			try
 			{
+				(bool flowControl, ReferralOperationResult value) = await CanSendReferralInviteAsync(referrerId, emailOrPhone);
+
+				if (!flowControl)
+				{
+					return value;
+				}
+
 				var referral = new Referrals
 				{
 					ReferrerUserId = referrerId,
@@ -83,7 +93,7 @@ namespace CartonCaps.ReferralApi.Services
 				};
 
 				if (!notificationSent)
-				{					
+				{
 					referral.ReferralStatusId = 4;
 					_repository.UpdateReferralStatus(referral.Id, referral.ReferralStatusId);
 
@@ -109,6 +119,40 @@ namespace CartonCaps.ReferralApi.Services
 
 		}
 
+		public async Task<(bool flowControl, ReferralOperationResult value)> CanSendReferralInviteAsync(int referrerId, string emailOrPhone)
+		{
+			//Try and set max invite per hour like 5 or something in case someone tries to spam invites.
+			if (!_inviteTimestamps.ContainsKey(referrerId))
+				_inviteTimestamps[referrerId] = new List<DateTime>();
 
+			var now = DateTime.UtcNow;
+			_inviteTimestamps[referrerId] = _inviteTimestamps[referrerId]
+				.Where(t => (now - t).TotalHours < 1).ToList();
+
+			if (_inviteTimestamps[referrerId].Count >= MAX_INVITES_PER_HOUR)
+			{
+				return (flowControl: false, value: new ReferralOperationResult
+				{
+					Success = false,
+					Message = "Invite limit exceeded. Please try again later."
+				});
+			}
+
+			// Log this invite , so that we can track it.
+			_inviteTimestamps[referrerId].Add(now);
+
+			// Check if the user is trying to invite themselves.
+			var userDetails = await _userRepository.GetUserById(referrerId);
+			if (string.Equals(userDetails.EmailOrPhone, emailOrPhone, StringComparison.OrdinalIgnoreCase))
+			{
+				return (flowControl: false, value: new ReferralOperationResult
+				{
+					Success = false,
+					Message = "Cannot invite yourself."
+				});
+			}
+
+			return (flowControl: true, value: null);
+		}
 	}
 }
