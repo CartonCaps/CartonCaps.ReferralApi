@@ -17,7 +17,7 @@ namespace CartonCaps.ReferralApi.Services
 		public async Task<string> GenerateReferralLinkAsync(string referralCode, string channel)
 		{
 			var branchKey = _config["Branch:Key"];
-			var useMock = _config.GetValue<bool>("Branch:UseMock");
+			bool useMock = bool.Parse(_config["Branch:UseMock"]);
 			if (useMock)
 			{
 				await Task.Delay(50); // Just for fun, to get the expereince that its making a real call. 

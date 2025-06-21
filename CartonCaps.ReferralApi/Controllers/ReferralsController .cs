@@ -1,5 +1,5 @@
 ﻿using CartonCaps.ReferralApi.Models;
-using CartonCaps.ReferralApi.Models.DTO;
+using CartonCaps.ReferralApi.Models.Requests;
 using CartonCaps.ReferralApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,54 +14,23 @@ namespace CartonCaps.ReferralApi.Controllers
 		private readonly IReferralService _service;
 		private readonly IUserService _userRepository;
 		private readonly IReferralLinkService _referralLinkService;
+		private readonly ILogger<ReferralsController> _logger;
 
 
-		public ReferralsController(IReferralService referralService, IUserService userservice, IReferralLinkService referralLinkServie )
+		public ReferralsController(IReferralService referralService, IUserService userservice, IReferralLinkService referralLinkServie,
+			  ILogger<ReferralsController> logger)
 		{
 			_service = referralService;
 			_userRepository = userservice;
 			_referralLinkService = referralLinkServie;
-		}
-
-
-
-		// GET: api/<ReferralsController>
-		[HttpGet]
-		public IEnumerable<string> Get()
-		{
-			return new string[] { "value1", "value2" };
-		}
-
-		// GET api/<ReferralsController>/5
-		[HttpGet("{id}")]
-		public string Get(int id)
-		{
-			return "value";
-		}
-
-		// POST api/<ReferralsController>
-		[HttpPost]
-		public void Post([FromBody] string value)
-		{
-		}
-
-		// PUT api/<ReferralsController>/5
-		[HttpPut("{id}")]
-		public void Put(int id, [FromBody] string value)
-		{
-		}
-
-		// DELETE api/<ReferralsController>/5
-		[HttpDelete("{id}")]
-		public void Delete(int id)
-		{
+			_logger = logger;
 		}
 
 		/// <summary>
 		/// This endpoint retrieves a list of referrals for a specific user. I am assuming one user has same referal code that they 
 		/// can share with others and is unique to that user.
 		/// </summary>
-		/// <param name="userId"></param>
+		/// <param name="userId"></param> // for testing use - userId = 100 in Swagger UI
 		/// <returns></returns>
 		[HttpPost("referalslist")]
 		public async Task<IActionResult> GetReferrals([FromQuery] int userId)
@@ -73,14 +42,24 @@ namespace CartonCaps.ReferralApi.Controllers
 				return BadRequest("Invalid userId. It must be a positive integer.");
 			}
 
-
+			_logger.LogInformation("Fetching referrals for user ID: {UserId}", userId);
 			var referrals = await _service.GetUserReferralsAsync(userId);
 
 			if (referrals == null || referrals.Count == 0)
+			{
+				_logger.LogError($"No referrals found for user ID: {userId}");
 				return NotFound($"No referrals found for user ID: {userId}");
+			}
+				
 
 			return Ok(referrals);
 		}
+
+		/// <summary>
+		/// Use , user Id , 100, and channel, "email" or "sms" to test this endpoint in Swagger UI.
+		/// </summary>
+		/// <param name="request"></param>
+		/// <returns></returns>
 
 		[HttpPost("invite")]
 		public async Task<IActionResult> InviteFriend([FromBody] ReferralInviteRequest request)
@@ -91,12 +70,17 @@ namespace CartonCaps.ReferralApi.Controllers
 			}
 
 			var referralCode = await _userRepository.GetReferralCode(request.ReferrerUserId);
+			//The code to create invite URL and chose the specific notificaion channel (email or sms) is in the service layer.
 			var result = await _service.CreateReferralInvite(request.ReferrerUserId, request.EmailOrPhone, request.Channel, referralCode);
 			if (!result.Success)
+			{
+				_logger.LogError("An error occured while creating or inviting an referree " + result.Message);
 				return StatusCode(500, result.Message);
+			}
+				
 
 
-			return Ok(new { status = "logged" });
+			return Ok(new { status =  $" invitation to {request.EmailOrPhone} was successfully sent."});
 		}
 
 	}

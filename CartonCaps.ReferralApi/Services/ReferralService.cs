@@ -1,5 +1,6 @@
 ﻿using CartonCaps.ReferralApi.Models;
 using CartonCaps.ReferralApi.Models.DTO;
+using CartonCaps.ReferralApi.Models.Enums;
 using CartonCaps.ReferralApi.Models.Responses;
 using CartonCaps.ReferralApi.Repositories;
 
@@ -30,16 +31,33 @@ namespace CartonCaps.ReferralApi.Services
 				ReferralCode = r.ReferralCode,
 				ReferredEmailOrPhone = r.EmailOrPhone,
 				CreatedAt = r.ReferredDate,
-				Status = r.Status.StatusName
+				Status = ((ReferralStatus)r.ReferralStatusId).ToString(),
 			}).ToList();
 		}
 
+		public async Task<ReferralOperationResult> UpdateSuccessfulReferralToRedeemedAsync(int newlyAddedUserId, string referralCode)
+		{
+			try
+			{
+				var referral = await _repository.UpdateSuccessfulReferralToRedeemedAsync(newlyAddedUserId, referralCode);
+				return referral;
+			}
+			catch (Exception ex)
+			{
+				//if something fails duirng DB call log that here. 
+				return new ReferralOperationResult
+				{
+					Success = false,
+					Message = $"An error occurred while updating or retrieving the referral: {ex.Message}"
+				};
+			}
+		}
 
 		public async Task<ReferralOperationResult> CreateReferralInvite(int referrerId, string emailOrPhone, string channel, string referralCode)
 		{
 			try
 			{
-				var referral = new ReferralModel
+				var referral = new Referrals
 				{
 					ReferrerUserId = referrerId,
 					ReferralCode = referralCode,
