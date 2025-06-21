@@ -7,5 +7,6 @@ namespace CartonCaps.ReferralApi.Services
 	{
 		Task<List<ReferralDto>> GetUserReferralsAsync(int userId);
 		Task<ReferralOperationResult> CreateReferralInvite(int referrerId, string emailOrPhone, string channel, string referralCode);
+		Task<ReferralOperationResult> UpdateSuccessfulReferralToRedeemedAsync(int newlyAddedUserId, string referralCode);
 	}
 }

@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace CartonCaps.ReferralApi.Models.DTO
+namespace CartonCaps.ReferralApi.Models.Requests
 {
 	public class ReferralInviteRequest
 	{
