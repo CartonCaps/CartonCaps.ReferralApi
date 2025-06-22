@@ -118,5 +118,77 @@ namespace CartonCaps.ReferralApi.Controllers.Tests
 			Assert.IsNotNull(result);
 			Assert.AreEqual(200, result.StatusCode);
 		}
+
+		[TestMethod]
+		public async Task GetReferralLink_ReturnsOk_WithValidData()
+		{
+			// Arrange
+			int userId = 100;
+			string channel = "email";
+			string mockLink = "https://mock.link/abc123";
+
+			_referralServiceMock.Setup(s => s.GetReferralLinkAsync(userId, channel))
+								.ReturnsAsync(mockLink);
+
+			// Act
+			var result = await _controller.GetReferralLink(userId, channel);
+
+			// Assert
+			var okResult = result as OkObjectResult;
+			Assert.IsNotNull(okResult);
+			Assert.AreEqual(200, okResult.StatusCode);
+		}
+
+		[TestMethod]
+		public async Task GetReferralLink_ReturnsBadRequest_WhenUserIdIsInvalid()
+		{
+			// Arrange
+			int userId = 0;
+			string channel = "email";
+
+			// Act
+			var result = await _controller.GetReferralLink(userId, channel);
+
+			// Assert
+			var badResult = result as BadRequestObjectResult;
+			Assert.IsNotNull(badResult);
+			Assert.AreEqual("UserId and channel are required.", badResult.Value);
+		}
+
+		[TestMethod]
+		public async Task GetReferralLink_ReturnsBadRequest_WhenChannelIsEmpty()
+		{
+			// Arrange
+			int userId = 100;
+			string channel = "";
+
+			// Act
+			var result = await _controller.GetReferralLink(userId, channel);
+
+			// Assert
+			var badResult = result as BadRequestObjectResult;
+			Assert.IsNotNull(badResult);
+			Assert.AreEqual("UserId and channel are required.", badResult.Value);
+		}
+
+		[TestMethod]
+		public async Task GetReferralLink_ReturnsServerError_WhenExceptionIsThrown()
+		{
+			// Arrange
+			int userId = 100;
+			string channel = "sms";
+
+			_referralServiceMock.Setup(s => s.GetReferralLinkAsync(userId, channel))
+								.ThrowsAsync(new Exception("Service failed"));
+
+			// Act
+			var result = await _controller.GetReferralLink(userId, channel);
+
+			// Assert
+			var statusResult = result as ObjectResult;
+			Assert.IsNotNull(statusResult);
+			Assert.AreEqual(500, statusResult.StatusCode);
+			Assert.AreEqual("Failed to retrieve referral link.", statusResult.Value);
+		}
 	}
 }

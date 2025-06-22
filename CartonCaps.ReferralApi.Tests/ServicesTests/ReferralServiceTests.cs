@@ -4,9 +4,11 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using CartonCaps.ReferralApi.Controllers;
 using CartonCaps.ReferralApi.Models;
 using CartonCaps.ReferralApi.Models.Responses;
 using CartonCaps.ReferralApi.Repositories;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace CartonCaps.ReferralApi.Services.Tests
@@ -19,6 +21,7 @@ namespace CartonCaps.ReferralApi.Services.Tests
 		private Mock<IReferralLinkService> _linkServiceMock;
 		private Mock<INotificationService> _notificationServiceMock;
 		private ReferralService _service;
+		private Mock<ILogger<ReferralService>> _mockLogger;
 
 
 		[TestInitialize]
@@ -28,12 +31,15 @@ namespace CartonCaps.ReferralApi.Services.Tests
 			_userRepoMock = new Mock<IUserRepository>();
 			_linkServiceMock = new Mock<IReferralLinkService>();
 			_notificationServiceMock = new Mock<INotificationService>();
+			_mockLogger = new Mock<ILogger<ReferralService>>();
+
 
 			_service = new ReferralService(
 				_referralRepoMock.Object,
 				_userRepoMock.Object,
 				_linkServiceMock.Object,
-				_notificationServiceMock.Object);
+				_notificationServiceMock.Object,
+				_mockLogger.Object);
 		}
 
 
@@ -200,6 +206,62 @@ namespace CartonCaps.ReferralApi.Services.Tests
 			// Assert
 			Assert.IsTrue(result.flowControl);
 			Assert.IsNull(result.value);
+		}
+
+		[TestMethod]
+		public async Task GetReferralLinkAsync_ReturnsLink_WhenDataIsValid()
+		{
+			// Arrange
+			int userId = 100;
+			string channel = "email";
+			string referralCode = "REF123";
+			string expectedLink = "https://mocked.link";
+
+			_userRepoMock.Setup(x => x.GetReferralCodeByUserId(userId))
+				.ReturnsAsync(referralCode);
+
+			_linkServiceMock.Setup(x => x.GenerateReferralLinkAsync(referralCode, channel))
+				.ReturnsAsync(expectedLink);
+
+			// Act
+			var result = await _service.GetReferralLinkAsync(userId, channel);
+
+			// Assert
+			Assert.AreEqual(expectedLink, result);
+		}
+
+		[TestMethod]
+		[ExpectedException(typeof(ApplicationException))]
+		public async Task GetReferralLinkAsync_Throws_WhenUserRepositoryFails()
+		{
+			// Arrange
+			int userId = 101;
+			string channel = "sms";
+
+			_userRepoMock.Setup(x => x.GetReferralCodeByUserId(userId))
+				.ThrowsAsync(new Exception("DB failure"));
+
+			// Act
+			await _service.GetReferralLinkAsync(userId, channel);
+		}
+
+		[TestMethod]
+		[ExpectedException(typeof(ApplicationException))]
+		public async Task GetReferralLinkAsync_Throws_WhenLinkServiceFails()
+		{
+			// Arrange
+			int userId = 102;
+			string channel = "email";
+			string referralCode = "REF456";
+
+			_userRepoMock.Setup(x => x.GetReferralCodeByUserId(userId))
+				.ReturnsAsync(referralCode);
+
+			_linkServiceMock.Setup(x => x.GenerateReferralLinkAsync(referralCode, channel))
+				.ThrowsAsync(new Exception("Branch API down"));
+
+			// Act
+			await _service.GetReferralLinkAsync(userId, channel);
 		}
 
 	}

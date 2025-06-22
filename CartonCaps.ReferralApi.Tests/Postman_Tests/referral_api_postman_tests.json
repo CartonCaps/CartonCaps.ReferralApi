@@ -6,6 +6,7 @@
   },
   "item": [
     {
+
       "name": "Get Referrals - Valid User",
       "request": {
         "method": "POST",
@@ -13,9 +14,9 @@
         "url": {
           "raw": "httpss://localhost:7185/api/referrals/referalslist?userId=100",
           "protocol": "https",
-          "host": ["localhost"],
+          "host": [ "localhost" ],
           "port": "7185",
-          "path": ["api", "referrals", "referalslist"],
+          "path": [ "api", "referrals", "referalslist" ],
           "query": [
             {
               "key": "userId",
@@ -135,9 +136,9 @@
         "url": {
           "raw": "httpss://localhost:7185/api/referrals/invite",
           "protocol": "https",
-          "host": ["localhost"],
+          "host": [ "localhost" ],
           "port": "7185",
-          "path": ["api", "referrals", "invite"]
+          "path": [ "api", "referrals", "invite" ]
         }
       },
       "event": [
@@ -147,6 +148,52 @@
             "exec": [
               "pm.test(\"Status code is 400\", function () {",
               "    pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Referral Link - Valid User",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://localhost:7185/api/referrals/get-referral-link?userId=100&channel=email",
+          "protocol": "https",
+          "host": [ "localhost" ],
+          "port": "7185",
+          "path": [ "api", "referrals", "get-referral-link" ],
+          "query": [
+            {
+              "key": "userId",
+              "value": "100"
+            },
+            {
+              "key": "channel",
+              "value": "email"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test(\"Response contains referralLink\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property(\"referralLink\");",
+              "    pm.expect(jsonData.referralLink).to.be.a(\"string\").and.not.empty;",
+              "});",
+              "pm.test(\"Referral link looks like a URL\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.referralLink).to.match(/^https?:\\/\\/.+/);",
               "});"
             ],
             "type": "text/javascript"

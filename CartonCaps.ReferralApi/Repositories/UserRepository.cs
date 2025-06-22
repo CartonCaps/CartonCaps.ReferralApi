@@ -5,6 +5,8 @@ namespace CartonCaps.ReferralApi.Repositories
 {
 	public class UserRepository : IUserRepository
 	{
+		//Not really adding logging here, because this is a simple repository.
+		//In a real-world application, you might want to add logging for debugging purposes.
 		private readonly AppDbContext _context;
 
 		public UserRepository(AppDbContext context)
@@ -12,12 +14,12 @@ namespace CartonCaps.ReferralApi.Repositories
 			_context = context;
 		}
 		private readonly Dictionary<int, string> _userReferralCodes = new()
-	   {
-		{ 101, "REF101ABC" },
-		{ 102, "REF102XYZ" },
-		{ 103, "REF103MNO" },
-		{100, "REF100DEF" }
-	   };
+	    {
+		 { 101, "REF101ABC" },
+		 { 102, "REF102XYZ" },
+		 { 103, "REF103MNO" },
+		 {100, "REF100DEF" }
+	    };
 
 
 
@@ -34,8 +36,7 @@ namespace CartonCaps.ReferralApi.Repositories
 		}
 		public Task<User> GetUserById(int userId)
 		{
-			var user = new User() { Id = userId, FirstName = "John", LastName = "Doe", EmailOrPhone = "test@gmail.com" };
-			return Task.FromResult(user);
+			return Task.FromResult(_context.Users.FirstOrDefault(u => u.Id == userId) ?? throw new Exception("User not found"));
 		}
 	}
 }
