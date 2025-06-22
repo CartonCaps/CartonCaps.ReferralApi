@@ -69,6 +69,8 @@ namespace CartonCaps.ReferralApi.Controllers
 				return BadRequest(ModelState);
 			}
 
+			_logger.LogInformation("Processing referral invite for user ID: {UserId}, Email/Phone: {EmailOrPhone}, Channel: {Channel}",
+				request.ReferrerUserId, request.EmailOrPhone, request.Channel);
 			var referralCode = await _userRepository.GetReferralCode(request.ReferrerUserId);
 			//The code to create invite URL and chose the specific notificaion channel (email or sms) is in the service layer.
 			var result = await _service.CreateReferralInvite(request.ReferrerUserId, request.EmailOrPhone, request.Channel, referralCode);
@@ -83,5 +85,23 @@ namespace CartonCaps.ReferralApi.Controllers
 			return Ok(new { status =  $" invitation to {request.EmailOrPhone} was successfully sent."});
 		}
 
+		[HttpGet("get-referral-link")]
+		public async Task<IActionResult> GetReferralLink([FromQuery] int userId, [FromQuery] string channel)
+		{
+			_logger.LogInformation("Retrieving referral link for user ID: {UserId}, Channel: {Channel}", userId, channel);
+			if (userId <= 0 || string.IsNullOrWhiteSpace(channel))
+				return BadRequest("UserId and channel are required.");
+
+			try
+			{
+				var link = await _service.GetReferralLinkAsync(userId, channel);
+				return Ok(new { referralLink = link });
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error retrieving referral link for user {UserId}", userId);
+				return StatusCode(500, "Failed to retrieve referral link.");
+			}
+		}
 	}
 }

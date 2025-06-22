@@ -9,6 +9,7 @@ namespace CartonCaps.ReferralApi.DB
 
 		public DbSet<Referrals> Referrals { get; set; }
 		public DbSet<UserReferralProfile> UserRefProfiles { get; set; }
+		public DbSet<User> Users { get; set; }
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{			

@@ -14,18 +14,40 @@ namespace CartonCaps.ReferralApi.Services
 		private readonly INotificationService _notificationService;
 		private static readonly Dictionary<int, List<DateTime>> _inviteTimestamps = new();
 		private const int MAX_INVITES_PER_HOUR = 5;
+		private readonly ILogger<ReferralService> _logger;
 
 		public ReferralService(IReferralRepository referralRepository, IUserRepository userRepository, 
-			IReferralLinkService referralLinkService, INotificationService notificationService)
+			IReferralLinkService referralLinkService, INotificationService notificationService, ILogger<ReferralService> logger)
 		{
 			_repository = referralRepository;
 			_userRepository = userRepository;
 			_referralLinkService = referralLinkService;
 			_notificationService = notificationService;
+			_logger = logger;
 		}
 		public async Task<List<ReferralDto>> GetUserReferralsAsync(int userId)
 		{
-			var referrals = await _repository.GetReferralsByUserIdAsync(userId);
+			try
+			{
+				var referrals = await _repository.GetReferralsByUserIdAsync(userId);
+
+				if (referrals == null || !referrals.Any())
+				{
+					_logger.LogWarning("No referrals found for user ID: {UserId}", userId);
+					return new List<ReferralDto>();
+				}
+				return MapToDTO(referrals);
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Error fetching referrals for user ID: {UserId}", userId);
+				Console.Error.WriteLine($"Error fetching referrals for user {userId}: {ex.Message}");				
+				throw new ApplicationException("Failed to fetch user referrals. Please try again later.", ex);
+			}
+		}
+
+		private static List<ReferralDto> MapToDTO(List<Referrals> referrals)
+		{
 
 			// Map to DTOs
 			return referrals.Select(r => new ReferralDto
@@ -41,11 +63,14 @@ namespace CartonCaps.ReferralApi.Services
 		{
 			try
 			{
+				_logger.LogInformation("Updating referral status for user ID: {NewlyAddedUserId} with referral code: {ReferralCode}",
+					newlyAddedUserId, referralCode);
 				var referral = await _repository.UpdateSuccessfulReferralToRedeemedAsync(newlyAddedUserId, referralCode);
 				return referral;
 			}
 			catch (Exception ex)
 			{
+				_logger.LogError(ex, "Error updating referral status for user ID: {NewlyAddedUserId} with referral code: {ReferralCode}", newlyAddedUserId, referralCode);
 				//if something fails duirng DB call log that here. 
 				return new ReferralOperationResult
 				{
@@ -54,12 +79,28 @@ namespace CartonCaps.ReferralApi.Services
 				};
 			}
 		}
+		public async Task<string> GetReferralLinkAsync(int userId, string channel)
+		{
+			try
+			{
+				var referralCode = await _userRepository.GetReferralCodeByUserId(userId);
+				var link = await _referralLinkService.GenerateReferralLinkAsync(referralCode, channel);
+				return link;
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError(ex, "Failed to generate referral link for user ID: {UserId}", userId);
+				throw new ApplicationException("Unable to generate referral link at this time.", ex);
+			}
+		}
 
 		public async Task<ReferralOperationResult> CreateReferralInvite(int referrerId, string emailOrPhone, string channel, string referralCode)
 		{
 			
 			try
 			{
+				_logger.LogInformation("Creating referral invite  for user ID: {ReferrerId}, Email/Phone: {EmailOrPhone}, Channel: {Channel}",
+					referrerId, emailOrPhone, channel);
 				(bool flowControl, ReferralOperationResult value) = await CanSendReferralInviteAsync(referrerId, emailOrPhone);
 
 				if (!flowControl)
@@ -83,6 +124,9 @@ namespace CartonCaps.ReferralApi.Services
 
 				var referralLink = await _referralLinkService.GenerateReferralLinkAsync(referralCode, channel);
 
+				// UI can modify this message as needed or we can modify this here according to the wireframe(I saw
+				// a really large message in the wireframe just not typing it all out here).
+				// For now, we will just use a simple message.
 				var message = $"You're invited to CartonCaps! Use this link to join: {referralLink}";
 
 				bool notificationSent = channel.ToLower() switch
@@ -109,7 +153,7 @@ namespace CartonCaps.ReferralApi.Services
 			}
 			catch (Exception ex)
 			{
-				// The exception can also be logged here if needed. 
+				_logger.LogError(ex, "Error creating referral invite for user ID: {ReferrerId} with email/phone: {EmailOrPhone}", referrerId, emailOrPhone);
 				return new ReferralOperationResult
 				{
 					Success = false,

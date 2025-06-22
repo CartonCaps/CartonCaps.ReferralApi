@@ -2,6 +2,7 @@
 {
 	public class NotificationService : INotificationService
 	{
+		//Not adding logging here, because this is a mock service.
 		public bool SendSms(string phoneNumber, string message)
 		{
 			Console.WriteLine($"[MOCK SMS] To: {phoneNumber} | Message: {message}");

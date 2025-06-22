@@ -44,8 +44,15 @@ using (var scope = app.Services.CreateScope())
 	{
 		new UserReferralProfile {Id = 1, UserId = 100, ReferralCode= "REF100DEF"},
 		new UserReferralProfile {Id = 2, UserId = 101, ReferralCode= "REF101ABC"},
-	    new UserReferralProfile {Id = 3, UserId = 200, ReferralCode = "REF200XYZ"} };
+	    new UserReferralProfile {Id = 3, UserId = 200, ReferralCode = "REF200XYZ"}
+	};
 
+	var users = new List<User>
+	{
+		new User { Id = 100, FirstName = "Alice", LastName = "Smith", EmailOrPhone = "user1@gmail.com" },
+		new User { Id = 101, FirstName = "Bob", LastName = "Johnson", EmailOrPhone = "user2@gmail.com" },
+		new User { Id = 200, FirstName = "Charlie", LastName = "Brown", EmailOrPhone = "user3@gmail.com" }
+	};
 
 	var referrals = new List<Referrals>
 	{
@@ -56,7 +63,7 @@ using (var scope = app.Services.CreateScope())
 		ReferralCode = "REF101ABC",
 		EmailOrPhone = "friend1@example.com",
 		ReferredDate = DateTime.UtcNow.AddDays(-3),
-		ReferralStatusId = (int)ReferralStatus.Pending, // Pending
+		ReferralStatusId = (int)ReferralStatus.Pending,
         
 		},
 		new Referrals
@@ -89,8 +96,10 @@ using (var scope = app.Services.CreateScope())
 	};
 	
 	context.Referrals.AddRange(referrals);
+	context.AddRange(users);
 	context.UserRefProfiles.AddRange(userProfiles);
 	context.SaveChanges();
+	
 }
 
 
