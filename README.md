@@ -52,7 +52,7 @@ Navigate to: `https://localhost:[your port]/swagger` to explore the Swagger UI.
 
 ## API Documentation
 
-Detailed API specs are available in [`api-spec.md`](./api-spec.md).
+Detailed API specs are available in [`referral_api_spec.md`](.referral_api_spec.md).
 And also some important diagrms are enclosed as well. 
 
 ---
