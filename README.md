@@ -74,7 +74,8 @@ Also there is a postman collection available in the repo to test the endpoints. 
 |--------|-------------------------------------------|----------------------------------|
 | POST   | `/api/referrals/invite`                  | Invite a friend (SMS/Email)     |
 | POST   | `/api/referrals/referalslist?userId=100` | Get referrals by user           |
-| POST   | `/api/user/referral/update-redeemed`     | Update status after redemption  |
+| POST   | `/api/user/referrals/update-redeemed`     | Update status after redemption  |
+|GET     | `/api/user/referrals/get-referral-link`   |Just get the URL. rest will need to handled by UI|
 
 See [`api-spec.md`](./api-spec.md) for full details and sample payloads.
 
