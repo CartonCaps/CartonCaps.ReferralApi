@@ -5,6 +5,7 @@ using CartonCaps.ReferralApi.Models.Responses;
 using CartonCaps.ReferralApi.Services;
 using CartonCaps.ReferralApi.Tests.Helpers;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Collections.Generic;
@@ -20,11 +21,13 @@ using System.Threading.Tasks;
 public class ReferralLinkServiceTests
 {
 	private Mock<IConfiguration> _mockConfig;
+	private Mock<ILogger<ReferralLinkService>> _mockLogger;
 
 	[TestInitialize]
 	public void Setup()
 	{
 		_mockConfig = new Mock<IConfiguration>();
+		_mockLogger = new Mock<ILogger<ReferralLinkService>>();
 	}
 
 	[TestMethod]
@@ -33,7 +36,7 @@ public class ReferralLinkServiceTests
 		// Arrange
 		_mockConfig.Setup(c => c["Branch:UseMock"]).Returns("true");
 
-		var service = new ReferralLinkService(new HttpClient(), _mockConfig.Object);
+		var service = new ReferralLinkService(new HttpClient(), _mockConfig.Object, _mockLogger.Object);
 
 		// Act
 		var result = await service.GenerateReferralLinkAsync("REF123", "sms");
@@ -49,6 +52,7 @@ public class ReferralLinkServiceTests
 		var expectedUrl = "https://branch.io/generated-ref123";
 		_mockConfig.Setup(c => c["Branch:UseMock"]).Returns("false");
 		_mockConfig.Setup(c => c["Branch:Key"]).Returns("test_key");
+		
 
 		var fakeResponse = new BranchLinkResponse { url = expectedUrl };
 		var json = JsonSerializer.Serialize(fakeResponse);
@@ -59,7 +63,7 @@ public class ReferralLinkServiceTests
 		});
 
 		var httpClient = new HttpClient(messageHandler);
-		var service = new ReferralLinkService(httpClient, _mockConfig.Object);
+		var service = new ReferralLinkService(httpClient, _mockConfig.Object, _mockLogger.Object);
 
 		// Act
 		var result = await service.GenerateReferralLinkAsync("REF123", "email");
@@ -78,7 +82,7 @@ public class ReferralLinkServiceTests
 		var fakeResponse = new HttpResponseMessage(HttpStatusCode.BadRequest);
 		var httpClient = new HttpClient(new FakeHttpMessageHandler(fakeResponse));
 
-		var service = new ReferralLinkService(httpClient, _mockConfig.Object);
+		var service = new ReferralLinkService(httpClient, _mockConfig.Object, _mockLogger.Object);
 
 		await service.GenerateReferralLinkAsync("REF123", "email");
 	}
@@ -97,7 +101,7 @@ public class ReferralLinkServiceTests
 
 		var httpClient = new HttpClient(new FakeHttpMessageHandler(emptyContentResponse));
 
-		var service = new ReferralLinkService(httpClient, _mockConfig.Object);
+		var service = new ReferralLinkService(httpClient, _mockConfig.Object, _mockLogger.Object);
 
 		await service.GenerateReferralLinkAsync("REF123", "sms");
 	}

@@ -7,15 +7,17 @@ namespace CartonCaps.ReferralApi.Services
 	{
 		private readonly HttpClient _httpClient;
 		private readonly IConfiguration _config;
-
-		public ReferralLinkService(HttpClient httpClient, IConfiguration config)
+		private readonly ILogger<ReferralLinkService> _logger;
+		public ReferralLinkService(HttpClient httpClient, IConfiguration config, ILogger<ReferralLinkService> logger)
 		{
 			_httpClient = httpClient;
 			_config = config;
+			_logger = logger;
 		}
 
 		public async Task<string> GenerateReferralLinkAsync(string referralCode, string channel)
 		{
+			_logger.LogInformation("Generating referral link for code: {ReferralCode} on channel: {Channel}", referralCode, channel);
 			var branchKey = _config["Branch:Key"];
 			bool useMock = bool.Parse(_config["Branch:UseMock"]);
 			if (useMock)
@@ -40,8 +42,10 @@ namespace CartonCaps.ReferralApi.Services
 			}
 			};
 
+			_logger.LogInformation("Sending request to Branch API with data: {Data}", request.data);
 			var response = await _httpClient.PostAsJsonAsync("https://api2.branch.io/v1/url", request);
 			response.EnsureSuccessStatusCode();
+			_logger.LogInformation("Received response from Branch API: {StatusCode}", response.StatusCode);
 
 			var json = await response.Content.ReadFromJsonAsync<BranchLinkResponse>();
 			return json?.url ?? throw new Exception("Failed to generate Branch link.");

@@ -8,10 +8,10 @@ namespace CartonCaps.ReferralApi.Repositories
 		//Not really adding logging here, because this is a simple repository.
 		//In a real-world application, you might want to add logging for debugging purposes.
 		private readonly AppDbContext _context;
-
 		public UserRepository(AppDbContext context)
 		{
 			_context = context;
+
 		}
 		private readonly Dictionary<int, string> _userReferralCodes = new()
 	    {

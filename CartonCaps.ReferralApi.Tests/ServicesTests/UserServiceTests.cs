@@ -4,6 +4,7 @@ using System;
 using System.Threading.Tasks;
 using CartonCaps.ReferralApi.Repositories;
 using CartonCaps.ReferralApi.Services;
+using Microsoft.Extensions.Logging;
 
 namespace CartonCaps.ReferralApi.Services.Tests
 
@@ -13,12 +14,14 @@ namespace CartonCaps.ReferralApi.Services.Tests
 	{
 		private Mock<IUserRepository> _userRepositoryMock;
 		private UserService _userService;
+		private Mock<ILogger<UserService>> _loggerMock;
 
 		[TestInitialize]
 		public void Setup()
 		{
 			_userRepositoryMock = new Mock<IUserRepository>();
-			_userService = new UserService(_userRepositoryMock.Object);
+			_loggerMock = new Mock<ILogger<UserService>>();
+			_userService = new UserService(_userRepositoryMock.Object, _loggerMock.Object);
 		}
 
 		[TestMethod]
