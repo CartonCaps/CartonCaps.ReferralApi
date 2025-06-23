@@ -41,7 +41,7 @@ So if you find any issues please feel free to reach out to me and I can try my b
 
 ```checkout the code from ,
 https://github.com/CartonCaps/CartonCaps.ReferralApi
-the repo was created as public so you should not have any issues cloning it.
+The repo was created as public so you should not have any issues cloning it.
 This is integarated with swagger and the spec is avialble but I have added a separate file for the api spec to pass on to UI folks.
 ```
 
@@ -52,7 +52,7 @@ Navigate to: `https://localhost:[your port]/swagger` to explore the Swagger UI.
 
 ## API Documentation
 
-Detailed API specs are available in [`api-spec.md`](./api-spec.md).
+Detailed API specs are available in [`referral_api_spec.md`](referral_api_spec.md).
 And also some important diagrms are enclosed as well. 
 
 ---
@@ -61,6 +61,7 @@ And also some important diagrms are enclosed as well.
 
 ```There are MS Test unit tests available in the project which covers all major scenarios. 
 Also there is a postman collection available in the repo to test the endpoints. Download that and import it to postman.
+In postman please keep the Auth as No Auth and make sure it is https and that your local is running and modify port number according to your settings. 
 
 ```
 
