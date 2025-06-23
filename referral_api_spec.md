@@ -79,11 +79,11 @@ These protections are enforced inside the `ReferralService`.
 **Description:** Returns a list of referrals initiated by the user.
 
 ### Response
-
+Check Program.CS to find the pre seeded values and responses, and for success situations use the same userId and referralCode
 ```json
 [
   {
-    "referralcode": "ACD345",
+    "referralcode": "REF100DEF",
     "emailOrPhone": "friend@example.com",
     "status": "pending",
     "createdat": "2025-06-20T12:34:00Z"
@@ -108,8 +108,8 @@ These protections are enforced inside the `ReferralService`.
 
 ```json
 {
-  "referralCode": "ALICE123",
-  "userId": 10
+  "referralCode": "REF100DEF",
+  "userId": 100
 }
 ```
 
@@ -117,7 +117,7 @@ These protections are enforced inside the `ReferralService`.
 
 ```json
 {
-  "message": "Updated 1 referral(s) to redeemed for your referred person who used the code. ALICE123"
+  "message": "Updated 1 referral(s) to redeemed for your referred person who used the code. REF100DEF"
 }
 ```
 
@@ -145,7 +145,7 @@ These protections are enforced inside the `ReferralService`.
 
 ```json
 {
-  "referralLink": "https://app.cartoncaps.com/invite?ref=ABC123"
+  "referralLink": "https://app.cartoncaps.com/invite?ref=REF100DEF"
 }
 ```
 
